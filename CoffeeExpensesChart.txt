@@ -1,0 +1,333 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": {
+    "text": "Coffee Run Expenses",
+    "subtitle": "(and related treats)",
+    "align": "center",
+    "dx": 550,
+    "fontSize": 20
+  },
+  "data": {
+    "url": "https://raw.githubusercontent.com/xKaeporaGaebora/repository/main/CoffeeExpenses.csv",
+    "name": "Coffee Expenses",
+    "format": {"parse": {"Date": "date:'%d/%m/%y'"}}
+  },
+  "vconcat": [
+    { "name": "CumulativeSpendChart",
+      "width": 800,
+      "height": 300,
+      "transform": [
+        {
+        "aggregate":[{"op": "sum", "field": "Cost", "as": "Spent"}],
+        "groupby": ["Date", "Place"]
+        },
+        {
+        "sort": [{"field": "Date"}],
+        "window": [{"op": "sum", "field": "Spent", "as": "Cumulative Spend"}],
+        "frame": [null, 0],
+        "ignorePeers": false,
+        "groupby": ["Place"]
+        }
+      ],
+      "encoding": {
+        "x": {
+          "field": "Date",
+          "type": "temporal",
+          "timeUnit": {"unit": "yearmonthdate", "utc": false},
+          "axis": {
+            "title": null,
+            "tickCount": {"interval": "month", "step": 1},
+            "labelAngle": 0,
+            "labelPadding": 10,
+            "bandPosition": 0.5,
+            "labelOffset": 63,
+            "tickBand": "center",
+            "format": "%b"
+          }
+        }
+      },
+      "layer":[
+      { 
+        "params": [
+          {
+            "name": "selectedPlace",
+            "select": {"type": "point", "fields": ["Place"]},
+            "bind": "legend"
+          }
+        ],
+        "name": "SpendLine",
+        "mark": "line",
+        "encoding": {
+          "y": {
+            "field": "Cumulative Spend",
+            "type": "quantitative",
+            "axis": {
+              "title": "Cumulative Spend",
+              "tickCount": 10,
+              "format": "$.0f"
+            }
+            },
+            "color": {
+              "field": "Place",
+              "sort": {
+                "op": "sum",
+                "field": "Spent",
+                "order": "descending"
+              },
+              "scale": {
+                "range": ["#0D1A29", "#152C48", "#1C3E68", "#224F88", "#2761A9", "#2C73CC", "#2F84EF", "#5498ED", "#77ABED", "#99BFEE", "#B9D2F1", "#D8E5F6", "#F4F8FC"]
+              },
+              "legend": {"offset": -45}
+            },
+            "opacity": {"condition": {"param": "selectedPlace", "value": 1}, "value": 0.1}
+        }
+      },
+      {
+      "params": [
+          { "name": "index",
+            "select": {
+              "type": "point",
+              "encodings": ["x", "y"],
+              "on": "pointermove",
+              "nearest": true,
+              "fields":["Date"]
+            }
+          }
+        ],
+        "mark": {
+          "type": "point",
+          "opacity": 0.3
+        },
+        "encoding": {
+          "y": {
+            "field": "Cumulative Spend",
+            "type": "quantitative",
+            "axis": {"tickCount": 10}
+            },
+          "color": {
+            "field": "Place",
+            "sort": {
+              "op": "sum",
+              "field": "Spent",
+              "order": "descending"
+            }
+          },
+          "opacity": {"condition": {"param": "selectedPlace", "value": 0.3, "empty": true}, "value": 0.05},
+          "tooltip": [
+            {"field": "Place", "type": "nominal"},
+            {"field": "Cumulative Spend", "type": "quantitative", "format": "$.2f"},
+            {"field": "Date", "type": "temporal", "format": "%d %b %Y"}
+          ]
+        }
+      },
+      {
+        "mark": {
+          "type": "bar",
+          "width": 55,
+          "opacity": 0.08,
+          "align": "left",
+          "xOffset": 40
+          },
+        "transform": [
+          {
+            "timeUnit": {"utc": false, "unit": "yearmonth"},
+            "field": "Date",
+            "as": "Month"
+          },
+          {
+            "filter": {"param": "selectedPlace"}
+          }
+        ],
+        "encoding": {
+          "y": {
+            "aggregate": "sum",
+            "field": "Spent",
+            "type": "quantitative"
+          },
+          "x": {
+            "field": "Month",
+            "type": "temporal",
+            "bandPosition": 0.5,
+            "axis": {"offset": 10, "tickBand": "center", "labelAlign": "center"}
+          },
+          "color": {
+              "value": "#2C73CC"
+          }
+        }
+      },
+      {
+        "transform": [{
+          "filter": {"and": ["index.Date", {"param": "index"}]}
+        }],
+        "mark": "rule"
+      },
+      {
+        "transform": [{
+          "filter": {"and": ["index.Date", {"param": "index"}]}
+        }],
+        "mark": {
+          "type": "text",
+          "xOffset": 40},
+        "encoding": {
+          "y": {"value": 10},
+          "text":{
+            "field": "Date",
+            "type": "temporal",
+            "format": "%d %b %y"}
+        }
+      }
+      ]
+    },
+    {
+      "hconcat": [
+        { "name": "StackedBar",
+          "width": 400,
+          "height": 300,
+          "transform": [
+            {
+              "timeUnit": "month", "field": "Date", "as": "Month"
+            }
+            ],
+          "params":[
+            {
+              "name": "selectedMonth",
+              "value": "0",
+              "select": {"type": "point", "fields": ["Month"]}
+            }
+          ],
+          "mark": {
+            "type": "bar",
+            "tooltip": true,
+            "width": 40,
+            "xOffset": 20
+          },
+          "encoding": {
+            "x": {
+              "field": "Month",
+              "type": "temporal",
+              "axis": {
+                "title": null,
+                "tickCount": {"interval": "month", "step": 1},
+                "labelAngle": 0,
+                "labelOffset": 20,
+                "labelPadding": 15,
+                "titlePadding": 10,
+                "format": "%b"
+              }
+            },
+            "y": {
+              "aggregate": "count", 
+              "field": "Place",
+              "title": "Number of Transactions",
+              "axis": {
+                "titlePadding": 20
+              }
+            },
+            "color": {
+              "field": "Place",
+              "legend": null,
+              "sort": {
+                "op": "sum",
+                "field": "Cost",
+                "order": "descending"
+              },
+              "scale": {"range": ["#0D1A29", "#152C48", "#1C3E68", "#224F88", "#2761A9", "#2C73CC", "#2F84EF", "#5498ED", "#77ABED", "#99BFEE", "#B9D2F1", "#D8E5F6", "#F4F8FC"]}
+            },
+            "opacity": {"condition": {"param": "selectedPlace", "value": 1}, "value": 0.1},
+            "order": {
+              "aggregate": "count",
+              "field": "Place",
+              "sort": "descending"
+            },
+            "tooltip": [
+              {"field": "Place", "type": "nominal"},
+              {"aggregate": "count", "field": "Place", "title": "Number of Transactions"},
+              {"aggregate": "sum", "field": "Cost", "format": "$.2f", "title": "Amount Spent"}
+            ]
+          }
+        },
+        { "name": "Histograms",
+          "width": {"step": 30},
+          "height": 300,
+          "transform": [
+            {
+              "timeUnit": "month", "field": "Date", "as": "Month"
+            }
+          ],
+          "encoding": {
+            "x": {
+              "sort": {"op": "count", "field": "Place", "order": "descending"},
+              "field": "Place",
+              "type": "nominal",
+              "scale": {"paddingOuter": 0.5},
+              "axis": {"title": null, "labelAngle": -90, "labelOffset": 0}
+            }
+          },
+          "layer": [
+            {
+              "mark": {
+                "type": "rect",
+                "tooltip": true,
+                "width": {"band": 1}
+              },
+              "encoding": {
+                "y": {
+                  "field": "Cost",
+                  "bin": {"step": 3},
+                  "axis": {
+                    "title": "Spend Distribution",
+                    "format": "$.0f",
+                    "titlePadding": 10
+                  }
+                },
+                "color": {
+                  "aggregate": "count",
+                  "type": "quantitative",
+                  "scale": {"range": ["#F4F8FC", "#1C3E68"]}
+                },
+                "opacity": {"condition": {"param": "selectedPlace", "value": 1}, "value": 0.05},
+                "tooltip": [
+                  {"field": "Place"},
+                  {"aggregate": "min", "field": "Reg Order", "title": "Price of Coffee", "format": "$.2f"},            
+                  {"bin": {"step": 3}, "field": "Cost", "title": "Selected Price Range", "format": "$.0f"},
+                  {"aggregate": "count", "field": "Cost", "title": "Transactions in Range"}
+                ]
+              }
+            },
+            {
+              "mark": {
+                "type": "point",
+                "shape": "stroke",
+                "stroke": "darkolivegreen",
+                "strokeWidth": 3
+              },
+              "encoding": {
+                "y": {
+                  "title": "Average Spend",
+                  "aggregate": "average",
+                  "field": "Cost"
+                },
+                "opacity": {"condition": {"param": "selectedPlace", "value": 1}, "value": 0.05}
+              }
+            },
+            {
+              "mark": {
+                "type": "image",
+                "yOffset": -40
+              },
+              "encoding": {
+                "y": {
+                  "aggregate": "min",
+                  "field": "Reg Order"
+                },
+                "opacity": {"condition": {"param": "selectedPlace", "value": 1}, "value": 0.05},
+                "url": {"value": "https://raw.githubusercontent.com/xKaeporaGaebora/repository/main/CoffeeCup.png"},
+                "tooltip": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
